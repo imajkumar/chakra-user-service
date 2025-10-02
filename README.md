@@ -14,6 +14,8 @@ A Spring Boot microservice for user management with JWT authentication, PostgreS
 - **Refresh Token Support**: Secure token refresh mechanism
 - **Email Notifications**: Beautiful HTML email templates with Gmail SMTP
 - **Welcome Emails**: Automatic welcome emails sent after registration
+- **Login Success Notifications**: Security alerts sent after successful login
+- **Email Queue System**: Asynchronous email processing with Quartz scheduler
 - **UUID Support**: User IDs using UUID instead of auto-incrementing integers
 
 ## 🛠️ Tech Stack
@@ -290,23 +292,11 @@ GET /api/v1/users/health
 GET /api/v1/auth/health
 ```
 
-### Email Endpoints
+### Email Queue Management
 
-#### Send Welcome Email
+#### Get Email Queue Statistics
 ```http
-POST /api/v1/email/send-welcome/{userId}
-Authorization: Bearer <access_token>
-```
-
-**Example:**
-```http
-POST /api/v1/email/send-welcome/f79a0a3b-be0b-4ee3-b762-b485337f9675
-Authorization: Bearer <access_token>
-```
-
-#### Test Email Service
-```http
-POST /api/v1/email/test
+GET /api/v1/email-queue/stats
 ```
 
 **Response:**
@@ -314,15 +304,29 @@ POST /api/v1/email/test
 {
   "status": "success",
   "statusCode": 200,
-  "message": "Test email sent successfully",
-  "data": "Email functionality is working",
-  "timestamp": "2025-10-02T14:42:49.747905"
+  "message": "Email queue statistics retrieved successfully",
+  "data": {
+    "pendingEmails": 0,
+    "failedEmails": 0,
+    "timestamp": 1759406907335
+  },
+  "timestamp": "2025-10-02T10:30:00.123456"
 }
 ```
 
-#### Email Health Check
+#### Process Pending Emails
 ```http
-GET /api/v1/email/health
+POST /api/v1/email-queue/process
+```
+
+#### Cleanup Old Emails
+```http
+POST /api/v1/email-queue/cleanup
+```
+
+#### Email Queue Health Check
+```http
+GET /api/v1/email-queue/health
 ```
 
 ## 🔐 Security

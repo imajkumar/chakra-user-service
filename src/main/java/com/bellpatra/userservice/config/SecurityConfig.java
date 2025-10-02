@@ -39,13 +39,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers("/api/v1/users/health").permitAll()
-                .requestMatchers("/api/v1/email/test").permitAll()
-                .requestMatchers("/api/v1/email/health").permitAll()
                 .requestMatchers("/api/v1/email-queue/health").permitAll()
                 .requestMatchers("/api/v1/email-queue/stats").permitAll()
                 .requestMatchers("/api/v1/quartz/health").permitAll()
                 .requestMatchers("/api/v1/quartz/scheduler/info").permitAll()
-                .requestMatchers("/api/v1/test/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .anyRequest().authenticated()
             )

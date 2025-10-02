@@ -73,8 +73,7 @@ public class EmailQueue {
         WELCOME_EMAIL,
         LOGIN_SUCCESS,
         PASSWORD_RESET,
-        ACCOUNT_STATUS_CHANGE,
-        NOTIFICATION
+        PASSWORD_CHANGE
     }
     
     public enum EmailStatus {

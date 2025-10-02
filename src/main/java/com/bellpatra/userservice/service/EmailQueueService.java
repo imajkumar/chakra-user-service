@@ -3,6 +3,7 @@ package com.bellpatra.userservice.service;
 import com.bellpatra.userservice.entity.EmailQueue;
 import com.bellpatra.userservice.entity.User;
 import com.bellpatra.userservice.repository.EmailQueueRepository;
+import com.bellpatra.userservice.repository.PasswordResetTokenRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.util.UUID;
 public class EmailQueueService {
 
     private final EmailQueueRepository emailQueueRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final ObjectMapper objectMapper;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -86,24 +88,27 @@ public class EmailQueueService {
         }
     }
 
-    @Transactional
-    public EmailQueue queuePasswordResetEmail(User user, String resetToken) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public EmailQueue queuePasswordResetEmail(User user, String otp, String ipAddress) {
         try {
-            Map<String, Object> metadata = new HashMap<>();
-            metadata.put("userId", user.getId().toString());
-            metadata.put("resetToken", resetToken);
-            metadata.put("requestTime", LocalDateTime.now().toString());
+            // Create metadata
+            Map<String, Object> metadata = Map.of(
+                "otp", otp,
+                "ipAddress", ipAddress
+            );
 
             EmailQueue emailQueue = EmailQueue.builder()
-                    .recipientEmail(user.getEmail())
-                    .subject("🔐 Password Reset Request - ChakraERP")
-                    .htmlContent("") // Will be populated by processor
-                    .textContent("") // Will be populated by processor
-                    .emailType(EmailQueue.EmailType.PASSWORD_RESET)
-                    .status(EmailQueue.EmailStatus.PENDING)
-                    .scheduledAt(LocalDateTime.now())
-                    .metadata(convertToJson(metadata))
-                    .build();
+                .recipientEmail(user.getEmail())
+                .subject("🔐 Password Reset OTP - ChakraERP")
+                .emailType(EmailQueue.EmailType.PASSWORD_RESET)
+                .htmlContent("") // Will be populated by template
+                .textContent("Your password reset OTP is: " + otp)
+                .metadata(objectMapper.writeValueAsString(metadata))
+                .status(EmailQueue.EmailStatus.PENDING)
+                .scheduledAt(LocalDateTime.now())
+                .maxRetries(3)
+                .retryCount(0)
+                .build();
 
             EmailQueue savedEmail = emailQueueRepository.save(emailQueue);
             log.info("Password reset email queued for user: {} with ID: {}", user.getEmail(), savedEmail.getId());
@@ -115,32 +120,35 @@ public class EmailQueueService {
         }
     }
 
-    @Transactional
-    public EmailQueue queueAccountStatusChangeEmail(User user, String status) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public EmailQueue queuePasswordChangeEmail(User user, String ipAddress, String deviceInfo) {
         try {
-            Map<String, Object> metadata = new HashMap<>();
-            metadata.put("userId", user.getId().toString());
-            metadata.put("newStatus", status);
-            metadata.put("changeTime", LocalDateTime.now().toString());
+            // Create metadata
+            Map<String, Object> metadata = Map.of(
+                "ipAddress", ipAddress,
+                "deviceInfo", deviceInfo
+            );
 
             EmailQueue emailQueue = EmailQueue.builder()
-                    .recipientEmail(user.getEmail())
-                    .subject("📢 Account Status Update - ChakraERP")
-                    .htmlContent("") // Will be populated by processor
-                    .textContent("") // Will be populated by processor
-                    .emailType(EmailQueue.EmailType.ACCOUNT_STATUS_CHANGE)
-                    .status(EmailQueue.EmailStatus.PENDING)
-                    .scheduledAt(LocalDateTime.now())
-                    .metadata(convertToJson(metadata))
-                    .build();
+                .recipientEmail(user.getEmail())
+                .subject("✅ Password Changed Successfully - ChakraERP Security Alert")
+                .emailType(EmailQueue.EmailType.PASSWORD_CHANGE)
+                .htmlContent("") // Will be populated by template
+                .textContent("Your password has been successfully changed.")
+                .metadata(objectMapper.writeValueAsString(metadata))
+                .status(EmailQueue.EmailStatus.PENDING)
+                .scheduledAt(LocalDateTime.now())
+                .maxRetries(3)
+                .retryCount(0)
+                .build();
 
             EmailQueue savedEmail = emailQueueRepository.save(emailQueue);
-            log.info("Account status change email queued for user: {} with ID: {}", user.getEmail(), savedEmail.getId());
+            log.info("Password change email queued for user: {} with ID: {}", user.getEmail(), savedEmail.getId());
             return savedEmail;
 
         } catch (Exception e) {
-            log.error("Failed to queue account status change email for user: {}", user.getEmail(), e);
-            throw new RuntimeException("Failed to queue account status change email", e);
+            log.error("Failed to queue password change email for user: {}", user.getEmail(), e);
+            throw new RuntimeException("Failed to queue password change email", e);
         }
     }
 

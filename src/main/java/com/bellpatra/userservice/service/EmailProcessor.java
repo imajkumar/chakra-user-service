@@ -78,6 +78,9 @@ public class EmailProcessor {
     @Async
     public void processEmail(EmailQueue emailQueue) {
         try {
+            log.info("Starting to process email ID: {}, Type: {}, Recipient: {}", 
+                    emailQueue.getId(), emailQueue.getEmailType(), emailQueue.getRecipientEmail());
+            
             // Mark as processing
             emailQueueRepository.updateStatus(emailQueue.getId(), EmailQueue.EmailStatus.PROCESSING, LocalDateTime.now());
 
@@ -85,23 +88,29 @@ public class EmailProcessor {
             User user = null;
             if (emailQueue.getEmailType() == EmailQueue.EmailType.WELCOME_EMAIL || 
                 emailQueue.getEmailType() == EmailQueue.EmailType.LOGIN_SUCCESS ||
-                emailQueue.getEmailType() == EmailQueue.EmailType.ACCOUNT_STATUS_CHANGE) {
+                emailQueue.getEmailType() == EmailQueue.EmailType.PASSWORD_RESET ||
+                emailQueue.getEmailType() == EmailQueue.EmailType.PASSWORD_CHANGE) {
                 user = userRepository.findByEmail(emailQueue.getRecipientEmail()).orElse(null);
+                log.info("User lookup for email {}: {}", emailQueue.getRecipientEmail(), user != null ? "Found" : "Not found");
             }
 
             // Process based on email type
             switch (emailQueue.getEmailType()) {
                 case WELCOME_EMAIL:
+                    log.info("Processing WELCOME_EMAIL for user: {}", user != null ? user.getEmail() : "null");
                     processWelcomeEmail(emailQueue, user);
                     break;
                 case LOGIN_SUCCESS:
+                    log.info("Processing LOGIN_SUCCESS for user: {}", user != null ? user.getEmail() : "null");
                     processLoginSuccessEmail(emailQueue, user);
                     break;
                 case PASSWORD_RESET:
+                    log.info("Processing PASSWORD_RESET for user: {}", user != null ? user.getEmail() : "null");
                     processPasswordResetEmail(emailQueue, user);
                     break;
-                case ACCOUNT_STATUS_CHANGE:
-                    processAccountStatusChangeEmail(emailQueue, user);
+                case PASSWORD_CHANGE:
+                    log.info("Processing PASSWORD_CHANGE for user: {}", user != null ? user.getEmail() : "null");
+                    processPasswordChangeEmail(emailQueue, user);
                     break;
                 default:
                     log.warn("Unknown email type: {}", emailQueue.getEmailType());
@@ -134,58 +143,80 @@ public class EmailProcessor {
 
     private void processLoginSuccessEmail(EmailQueue emailQueue, User user) {
         if (user == null) {
+            log.error("User not found for login success email. EmailQueue ID: {}, Recipient: {}", 
+                     emailQueue.getId(), emailQueue.getRecipientEmail());
             throw new RuntimeException("User not found for login success email");
         }
+
+        log.info("Processing login success email for user: {} (ID: {})", user.getEmail(), user.getId());
 
         // Parse metadata
         Map<String, Object> metadata = parseMetadata(emailQueue.getMetadata());
         String ipAddress = (String) metadata.getOrDefault("ipAddress", "Unknown");
         String deviceInfo = (String) metadata.getOrDefault("deviceInfo", "Unknown");
 
-        // Send email directly
-        emailService.sendLoginSuccessEmail(user, ipAddress, deviceInfo);
+        log.info("Login success email metadata - IP: {}, Device: {}", ipAddress, deviceInfo);
+
+        try {
+            // Use the EmailService method with Thymeleaf template
+            emailService.sendLoginSuccessEmail(user, ipAddress, deviceInfo);
+            log.info("Login success email sent successfully to: {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send login success email to: {}", user.getEmail(), e);
+            throw e;
+        }
     }
 
     private void processPasswordResetEmail(EmailQueue emailQueue, User user) {
         if (user == null) {
+            log.error("User not found for password reset email. EmailQueue ID: {}, Recipient: {}", 
+                     emailQueue.getId(), emailQueue.getRecipientEmail());
             throw new RuntimeException("User not found for password reset email");
         }
 
+        log.info("Processing password reset email for user: {} (ID: {})", user.getEmail(), user.getId());
+
         // Parse metadata
         Map<String, Object> metadata = parseMetadata(emailQueue.getMetadata());
-        String resetToken = (String) metadata.get("resetToken");
+        String otp = (String) metadata.getOrDefault("otp", "000000");
+        String ipAddress = (String) metadata.getOrDefault("ipAddress", "Unknown");
 
-        String htmlContent = buildPasswordResetEmail(user, resetToken);
-        String textContent = "Password reset requested. Please use the provided token to reset your password.";
+        log.info("Password reset email metadata - OTP: {}, IP: {}", otp, ipAddress);
 
-        // Update email content
-        emailQueue.setHtmlContent(htmlContent);
-        emailQueue.setTextContent(textContent);
-        emailQueueRepository.save(emailQueue);
-
-        // Send email
-        emailService.sendPasswordResetEmail(user, resetToken);
+        try {
+            // Use the EmailService method with Thymeleaf template
+            emailService.sendPasswordResetEmail(user, otp, ipAddress);
+            log.info("Password reset email sent successfully to: {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send password reset email to: {}", user.getEmail(), e);
+            throw e;
+        }
     }
 
-    private void processAccountStatusChangeEmail(EmailQueue emailQueue, User user) {
+    private void processPasswordChangeEmail(EmailQueue emailQueue, User user) {
         if (user == null) {
-            throw new RuntimeException("User not found for account status change email");
+            log.error("User not found for password change email. EmailQueue ID: {}, Recipient: {}", 
+                     emailQueue.getId(), emailQueue.getRecipientEmail());
+            throw new RuntimeException("User not found for password change email");
         }
+
+        log.info("Processing password change email for user: {} (ID: {})", user.getEmail(), user.getId());
 
         // Parse metadata
         Map<String, Object> metadata = parseMetadata(emailQueue.getMetadata());
-        String status = (String) metadata.get("newStatus");
+        String ipAddress = (String) metadata.getOrDefault("ipAddress", "Unknown");
+        String deviceInfo = (String) metadata.getOrDefault("deviceInfo", "Unknown");
 
-        String htmlContent = buildAccountStatusChangeEmail(user, status);
-        String textContent = "Your account status has been updated to: " + status;
+        log.info("Password change email metadata - IP: {}, Device: {}", ipAddress, deviceInfo);
 
-        // Update email content
-        emailQueue.setHtmlContent(htmlContent);
-        emailQueue.setTextContent(textContent);
-        emailQueueRepository.save(emailQueue);
-
-        // Send email
-        emailService.sendAccountStatusChangeEmail(user, status);
+        try {
+            // Use the EmailService method with Thymeleaf template
+            emailService.sendPasswordChangeEmail(user, ipAddress, deviceInfo);
+            log.info("Password change email sent successfully to: {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to send password change email to: {}", user.getEmail(), e);
+            throw e;
+        }
     }
 
     private Map<String, Object> parseMetadata(String metadataJson) {
@@ -197,72 +228,4 @@ public class EmailProcessor {
         }
     }
 
-    private String buildPasswordResetEmail(User user, String resetToken) {
-        return String.format("""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .container { background: #f8f9fa; border-radius: 10px; padding: 30px; }
-                    .header { text-align: center; margin-bottom: 30px; }
-                    .logo { font-size: 24px; font-weight: bold; color: #667eea; }
-                    .button { display: inline-block; background: #667eea; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <div class="logo">🔐 ChakraERP</div>
-                        <h2>Password Reset Request</h2>
-                    </div>
-                    <p>Hello %s,</p>
-                    <p>We received a request to reset your password for your ChakraERP account.</p>
-                    <p>Click the button below to reset your password:</p>
-                    <div style="text-align: center;">
-                        <a href="#" class="button">Reset Password</a>
-                    </div>
-                    <p><strong>Reset Token:</strong> %s</p>
-                    <p><small>This token will expire in 1 hour. If you didn't request this, please ignore this email.</small></p>
-                </div>
-            </body>
-            </html>
-            """, user.getFirstName() + " " + user.getLastName(), resetToken);
-    }
-
-    private String buildAccountStatusChangeEmail(User user, String status) {
-        return String.format("""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .container { background: #f8f9fa; border-radius: 10px; padding: 30px; }
-                    .header { text-align: center; margin-bottom: 30px; }
-                    .logo { font-size: 24px; font-weight: bold; color: #667eea; }
-                    .status { padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; }
-                    .active { background: #d4edda; color: #155724; }
-                    .inactive { background: #f8d7da; color: #721c24; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <div class="logo">📢 ChakraERP</div>
-                        <h2>Account Status Update</h2>
-                    </div>
-                    <p>Hello %s,</p>
-                    <p>Your account status has been updated:</p>
-                    <div class="status %s">
-                        Status: %s
-                    </div>
-                    <p>If you have any questions about this change, please contact our support team.</p>
-                </div>
-            </body>
-            </html>
-            """, user.getFirstName() + " " + user.getLastName(), 
-                 status.toLowerCase(), status);
-    }
 }

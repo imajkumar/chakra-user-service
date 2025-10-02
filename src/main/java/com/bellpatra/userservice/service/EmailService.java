@@ -53,45 +53,22 @@ public class EmailService {
         }
     }
 
-    public void sendPasswordResetEmail(User user, String resetToken) {
+    public void sendSimpleEmail(String to, String subject, String htmlContent) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setFrom("ajayit2020@gmail.com");
-            helper.setTo(user.getEmail());
-            helper.setSubject("🔐 Password Reset Request - ChakraERP");
-
-            String htmlContent = buildPasswordResetEmail(user, resetToken);
+            helper.setTo(to);
+            helper.setSubject(subject);
             helper.setText(htmlContent, true);
 
             mailSender.send(message);
-            log.info("Password reset email sent successfully to: {}", user.getEmail());
+            log.info("Simple email sent successfully to: {}", to);
 
         } catch (MessagingException e) {
-            log.error("Failed to send password reset email to: {}", user.getEmail(), e);
-            throw new RuntimeException("Failed to send password reset email", e);
-        }
-    }
-
-    public void sendAccountStatusChangeEmail(User user, String status) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setFrom("ajayit2020@gmail.com");
-            helper.setTo(user.getEmail());
-            helper.setSubject("📢 Account Status Update - ChakraERP");
-
-            String htmlContent = buildAccountStatusChangeEmail(user, status);
-            helper.setText(htmlContent, true);
-
-            mailSender.send(message);
-            log.info("Account status change email sent successfully to: {}", user.getEmail());
-
-        } catch (MessagingException e) {
-            log.error("Failed to send account status change email to: {}", user.getEmail(), e);
-            throw new RuntimeException("Failed to send account status change email", e);
+            log.error("Failed to send simple email to: {}", to, e);
+            throw new RuntimeException("Failed to send simple email", e);
         }
     }
 
@@ -107,11 +84,10 @@ public class EmailService {
             // Prepare the context for Thymeleaf template
             Context context = new Context();
             context.setVariable("user", user);
-            context.setVariable("loginTime", java.time.LocalDateTime.now());
             context.setVariable("ipAddress", ipAddress);
             context.setVariable("deviceInfo", deviceInfo);
-            context.setVariable("appName", "ChakraERP");
-            context.setVariable("supportEmail", "support@chakraerp.com");
+            context.setVariable("loginTime", java.time.LocalDateTime.now());
+            context.setVariable("dashboardUrl", "http://localhost:8060/dashboard");
 
             // Process the template
             String htmlContent = templateEngine.process("login-success-email", context);
@@ -126,72 +102,63 @@ public class EmailService {
         }
     }
 
-    private String buildPasswordResetEmail(User user, String resetToken) {
-        return String.format("""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .container { background: #f8f9fa; border-radius: 10px; padding: 30px; }
-                    .header { text-align: center; margin-bottom: 30px; }
-                    .logo { font-size: 24px; font-weight: bold; color: #667eea; }
-                    .button { display: inline-block; background: #667eea; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <div class="logo">🔐 ChakraERP</div>
-                        <h2>Password Reset Request</h2>
-                    </div>
-                    <p>Hello %s,</p>
-                    <p>We received a request to reset your password for your ChakraERP account.</p>
-                    <p>Click the button below to reset your password:</p>
-                    <div style="text-align: center;">
-                        <a href="#" class="button">Reset Password</a>
-                    </div>
-                    <p><strong>Reset Token:</strong> %s</p>
-                    <p><small>This token will expire in 1 hour. If you didn't request this, please ignore this email.</small></p>
-                </div>
-            </body>
-            </html>
-            """, user.getFirstName() + " " + user.getLastName(), resetToken);
+    public void sendPasswordResetEmail(User user, String otp, String ipAddress) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom("ajayit2020@gmail.com");
+            helper.setTo(user.getEmail());
+            helper.setSubject("🔐 Password Reset OTP - ChakraERP");
+
+            // Prepare the context for Thymeleaf template
+            Context context = new Context();
+            context.setVariable("user", user);
+            context.setVariable("otp", otp);
+            context.setVariable("ipAddress", ipAddress);
+            context.setVariable("requestTime", java.time.LocalDateTime.now());
+            context.setVariable("expiresAt", java.time.LocalDateTime.now().plusMinutes(10));
+
+            // Process the template
+            String htmlContent = templateEngine.process("password-reset-email", context);
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            log.info("Password reset email sent successfully to: {}", user.getEmail());
+
+        } catch (MessagingException e) {
+            log.error("Failed to send password reset email to: {}", user.getEmail(), e);
+            throw new RuntimeException("Failed to send password reset email", e);
+        }
     }
 
-    private String buildAccountStatusChangeEmail(User user, String status) {
-        return String.format("""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .container { background: #f8f9fa; border-radius: 10px; padding: 30px; }
-                    .header { text-align: center; margin-bottom: 30px; }
-                    .logo { font-size: 24px; font-weight: bold; color: #667eea; }
-                    .status { padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; }
-                    .active { background: #d4edda; color: #155724; }
-                    .inactive { background: #f8d7da; color: #721c24; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <div class="logo">📢 ChakraERP</div>
-                        <h2>Account Status Update</h2>
-                    </div>
-                    <p>Hello %s,</p>
-                    <p>Your account status has been updated:</p>
-                    <div class="status %s">
-                        Status: %s
-                    </div>
-                    <p>If you have any questions about this change, please contact our support team.</p>
-                </div>
-            </body>
-            </html>
-            """, user.getFirstName() + " " + user.getLastName(), 
-                 status.toLowerCase(), status);
+    public void sendPasswordChangeEmail(User user, String ipAddress, String deviceInfo) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom("ajayit2020@gmail.com");
+            helper.setTo(user.getEmail());
+            helper.setSubject("✅ Password Changed Successfully - ChakraERP Security Alert");
+
+            // Prepare the context for Thymeleaf template
+            Context context = new Context();
+            context.setVariable("user", user);
+            context.setVariable("ipAddress", ipAddress);
+            context.setVariable("deviceInfo", deviceInfo);
+            context.setVariable("changeTime", java.time.LocalDateTime.now());
+            context.setVariable("loginUrl", "http://localhost:8060/login");
+
+            // Process the template
+            String htmlContent = templateEngine.process("password-change-email", context);
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            log.info("Password change email sent successfully to: {}", user.getEmail());
+
+        } catch (MessagingException e) {
+            log.error("Failed to send password change email to: {}", user.getEmail(), e);
+            throw new RuntimeException("Failed to send password change email", e);
+        }
     }
 }

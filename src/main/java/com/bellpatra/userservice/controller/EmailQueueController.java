@@ -3,6 +3,7 @@ package com.bellpatra.userservice.controller;
 import com.bellpatra.userservice.dto.ApiResponse;
 import com.bellpatra.userservice.entity.EmailQueue;
 import com.bellpatra.userservice.service.EmailQueueService;
+import com.bellpatra.userservice.service.EmailProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,7 @@ import java.util.Map;
 public class EmailQueueController {
 
     private final EmailQueueService emailQueueService;
+    private final EmailProcessor emailProcessor;
 
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getEmailStats() {
@@ -56,6 +58,17 @@ public class EmailQueueController {
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.badRequest("Failed to cleanup old emails: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/process")
+    public ResponseEntity<ApiResponse<String>> processPendingEmails() {
+        try {
+            emailProcessor.processPendingEmails();
+            return ResponseEntity.ok(ApiResponse.success("Pending emails processed successfully", "Email processing completed"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.badRequest("Failed to process pending emails: " + e.getMessage()));
         }
     }
 
