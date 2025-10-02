@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to ChakraERP</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: 16px;
+            margin-bottom: 0;
+        }
+        .content {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .welcome-title {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .user-info {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 5px 0;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .info-value {
+            color: #333;
+        }
+        .features {
+            margin: 30px 0;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-weight: bold;
+        }
+        .feature-text {
+            flex: 1;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: transform 0.3s ease;
+        }
+        .cta-button:hover {
+            transform: translateY(-2px);
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+        }
+        .social-links {
+            margin: 20px 0;
+        }
+        .social-link {
+            display: inline-block;
+            margin: 0 10px;
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        .highlight {
+            background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🚀 ChakraERP</div>
+            <p class="subtitle">Your Complete Business Management Solution</p>
+        </div>
+        
+        <div class="content">
+            <h1 class="welcome-title">🎉 Welcome to ChakraERP!</h1>
+            
+            <p>Dear <span class="highlight" th:text="${user.firstName + ' ' + user.lastName}">John Doe</span>,</p>
+            
+            <p>We're thrilled to have you join the ChakraERP family! Your account has been successfully created and you're now ready to experience the power of our comprehensive business management platform.</p>
+            
+            <div class="user-info">
+                <h3 style="margin-top: 0; color: #2c3e50;">📋 Your Account Details</h3>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value" th:text="${user.email}">user@example.com</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">User ID:</span>
+                    <span class="info-value" th:text="${user.id}">uuid-here</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Role:</span>
+                    <span class="info-value" th:text="${user.role}">USER</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value" style="color: #27ae60; font-weight: bold;" th:text="${user.status}">ACTIVE</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Registration Date:</span>
+                    <span class="info-value" th:text="${#temporals.format(user.createdAt, 'MMMM dd, yyyy')}">October 02, 2025</span>
+                </div>
+            </div>
+            
+            <div class="features">
+                <h3 style="color: #2c3e50; text-align: center;">✨ What You Can Do Now</h3>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">👤</div>
+                    <div class="feature-text">
+                        <strong>User Management</strong><br>
+                        Manage your profile and account settings
+                    </div>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">🔐</div>
+                    <div class="feature-text">
+                        <strong>Secure Authentication</strong><br>
+                        JWT-based security with refresh tokens
+                    </div>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">📊</div>
+                    <div class="feature-text">
+                        <strong>Business Analytics</strong><br>
+                        Track and analyze your business data
+                    </div>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">🔔</div>
+                    <div class="feature-text">
+                        <strong>Real-time Notifications</strong><br>
+                        Stay updated with instant alerts
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <a th:href="${loginUrl}" class="cta-button">🔐 Login to Your Account</a>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #667eea;">
+                <h4 style="margin-top: 0; color: #2c3e50;">🔑 Quick Access</h4>
+                <p style="margin-bottom: 10px;">You can now log in to your account using:</p>
+                <p style="margin: 5px 0;"><strong>Email:</strong> <span th:text="${user.email}">user@example.com</span></p>
+                <p style="margin: 5px 0;"><strong>Login URL:</strong> <a th:href="${loginUrl}" th:text="${loginUrl}">http://localhost:8060/login</a></p>
+            </div>
+            
+            <p style="text-align: center; color: #666; font-size: 14px; margin-top: 30px;">
+                If you have any questions or need assistance, don't hesitate to reach out to our support team.
+            </p>
+        </div>
+        
+        <div class="footer">
+            <div class="social-links">
+                <a href="#" class="social-link">📧 Support</a>
+                <a href="#" class="social-link">📚 Documentation</a>
+                <a href="#" class="social-link">💬 Community</a>
+            </div>
+            <p>© 2025 ChakraERP. All rights reserved.</p>
+            <p>This email was sent to <span th:text="${user.email}">user@example.com</span></p>
+        </div>
+    </div>
+</body>
+</html>
