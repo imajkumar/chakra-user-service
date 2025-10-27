@@ -37,13 +37,12 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/v1/auth/**").permitAll()
-                .requestMatchers("/api/v1/users/health").permitAll()
-                .requestMatchers("/api/v1/email-queue/health").permitAll()
-                .requestMatchers("/api/v1/email-queue/stats").permitAll()
-                .requestMatchers("/api/v1/quartz/health").permitAll()
-                .requestMatchers("/api/v1/quartz/scheduler/info").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
+                // Public endpoints
+                .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/refresh", 
+                                "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password",
+                                "/api/v1/auth/verify-otp", "/api/v1/users/health", "/api/v1/auth/health")
+                .permitAll()
+                // All other endpoints require authentication
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

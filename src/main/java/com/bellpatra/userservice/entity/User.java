@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -37,6 +38,16 @@ public class User {
     private String phoneNumber;
     
     @Enumerated(EnumType.STRING)
+    @Column(nullable = true)
+    private Gender gender;
+    
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
+    
+    @Column(name = "last_login")
+    private LocalDateTime lastLogin;
+    
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role = UserRole.USER;
     
@@ -58,5 +69,9 @@ public class User {
     
     public enum UserStatus {
         ACTIVE, INACTIVE, SUSPENDED
+    }
+    
+    public enum Gender {
+        MALE, FEMALE, OTHER, PREFER_NOT_TO_SAY
     }
 }
